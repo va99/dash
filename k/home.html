@@ -1,10 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home | Napier API Portal</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
             font-family: Verdana, sans-serif;
@@ -117,9 +117,9 @@
                     <div class="api-token">
                         <h3>API Token Management</h3>
                         <div class="token-container">
-                            <code>napier_tk_xxxxxxxxxxxxxxxxxxxx</code>
+                            <code>Loading token...</code>
                         </div>
-                        <p>Remaining free calls: 42/50</p>
+                        <p id="remaining-calls">Remaining free calls: Loading...</p>
                         <button class="btn" onclick="generateNewToken()">Generate New Token</button>
                         <p><small>⚠️ Generating a new token will invalidate the existing one</small></p>
                     </div>
@@ -162,5 +162,9 @@
             </tr>
         </table>
     </center>
+    <script>
+        const supabaseClient = supabase;
+    </script>
+    <script src="script.js"></script>
 </body>
 </html>
