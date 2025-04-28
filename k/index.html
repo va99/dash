@@ -1,0 +1,58 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Napier API Portal</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .promo-box {
+            background: #f0f8ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome to Napier API Portal</h1>
+    
+    <div class="promo-box">
+        <h3>🎁 New User Offer!</h3>
+        <p>Get 50 FREE API calls when you register - No credit card required!</p>
+    </div>
+
+    <h2>Login</h2>
+    <form id="login-form">
+        <label for="login-username">Username:</label><br>
+        <input type="text" id="login-username" name="login-username" required><br><br>
+
+        <label for="login-password">Password:</label><br>
+        <input type="password" id="login-password" name="login-password" required><br><br>
+
+        <button type="submit">Login</button>
+    </form>
+
+    <p><a href="home.html" id="forgot-password-link">Forgot your password?</a></p>
+
+    <h2>Create Account</h2>
+    <form id="signup-form">
+        <label for="signup-username">Username:</label><br>
+        <input type="text" id="signup-username" name="signup-username" required><br><br>
+
+        <label for="signup-email">Email:</label><br>
+        <input type="email" id="signup-email" name="signup-email" required><br><br>
+
+        <label for="signup-password">Password:</label><br>
+        <input type="password" id="signup-password" name="signup-password" required><br><br>
+
+        <button type="submit">Create Account & Get Free API Calls</button>
+    </form>
+    <script src="script.js"></script>
+</body>
+</html>
