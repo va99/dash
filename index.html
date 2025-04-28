@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Napier API Portal</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Verdana, sans-serif;
+            background-color: #f6f6ef;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 85%;
+            margin: 0 auto;
+            background-color: #f6f6ef;
+        }
+        .header {
+            background-color: #000000;
+            padding: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .logo-container {
+            display: flex;
+            align-items: center;
+        }
+        .n-logo {
+            width: 18px;
+            height: 18px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: black;
+            border-radius: 2px;
+            margin-right: 4px;
+        }
+        .nav-links {
+            display: flex;
+            align-items: center;
+        }
+        .nav-links a {
+            margin-right: 8px;
+            color: white;
+            text-decoration: none;
+        }
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+        .user-links {
+            color: white;
+        }
+        .user-links a {
+            color: white;
+            text-decoration: none;
+        }
+        .user-links a:hover {
+            text-decoration: underline;
+        }
+
+        /* Login/Signup Form Styles */
+        .auth-forms {
+            padding: 20px;
+        }
+        .promo-box {
+            background: #f0f8ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .btn {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        .error-message {
+            color: red;
+            display: none;
+            margin: 10px 0;
+        }
+
+        /* Dashboard Styles */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        /* Home Page Styles */
+        .api-token {
+            background: #f6f6ef;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .token-container {
+            background: #eee;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .pricing-cards {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .pricing-card {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 8px;
+            width: 300px;
+            text-align: center;
+            background: white;
+        }
+        .pricing-card.featured {
+            border: 2px solid #4a90e2;
+        }
+
+        /* Settings Styles */
+        .settings-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* Help Styles */
+        .help-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .faq-item {
+            margin: 20px 0;
+        }
+        .faq-item h4 {
+            margin: 0;
+            color: #333;
+        }
+        .faq-item p {
+            margin: 10px 0;
+            color: #666;
+        }
+
+        /* Profile Form Styles */
+        .profileform table {
+            width: 100%;
+            max-width: 600px;
+        }
+        .profileform td {
+            padding: 5px;
+        }
+
+        /* Page Section Display */
+        .page-section {
+            display: none;
+            padding: 20px;
+        }
+        .page-section.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Navigation -->
+        <div class="header">
+            <div class="logo-container">
+                <div class="n-logo" onclick="showPage('home')">N</div>
+                <div class="nav-links">
+                    <b><a href="#" onclick="showPage('home')">Napier</a></b>
+                    <a href="#" onclick="showPage('dashboard')">dashboard</a> |
+                    <a href="#" onclick="showPage('user')">account</a> |
+                    <a href="#" onclick="showPage('settings')">settings</a> |
+                    <a href="#" onclick="showPage('help')">help</a>
+                </div>
+            </div>
+            <div class="user-links">
+                <span id="user-display"><a href="#" onclick="showPage('user')">guest</a> | <a href="#" onclick="showLoginForm()">login</a></span>
+            </div>
+        </div>
+
+        <!-- Login/Signup Page -->
+        <div id="auth-page" class="page-section active">
+            <h1>Welcome to Napier API Portal</h1>
+            
+            <div class="promo-box">
+                <h3>🎁 New User Offer!</h3>
+                <p>Get 50 FREE API calls when you register - No credit card required!</p>
+            </div>
+
+            <div id="login-section">
+                <h2>Login</h2>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="login-username">Email:</label><br>
+                        <input type="email" id="login-username" name="login-username" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="login-password">Password:</label><br>
+                        <input type="password" id="login-password" name="login-password" required>
+                    </div>
+
+                    <div id="login-error" class="error-message"></div>
+
+                    <button type="submit" class="btn">Login</button>
+                </form>
+
+                <p><a href="#" id="forgot-password-link">Forgot your password?</a></p>
+            </div>
+
+            <div id="signup-section">
+                <h2>Create Account</h2>
+                <form id="signup-form">
+                    <div class="form-group">
+                        <label for="signup-username">Username:</label><br>
+                        <input type="text" id="signup-username" name="signup-username" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signup-email">Email:</label><br>
+                        <input type="email" id="signup-email" name="signup-email" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signup-password">Password:</label><br>
+                        <input type="password" id="signup-password" name="signup-password" required>
+                    </div>
+
+                    <div id="signup-error" class="error-message"></div>
+
+                    <button type="submit" class="btn">Create Account & Get Free API Calls</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Home Page -->
+        <div id="home-page" class="page-section">
+            <div class="api-token">
+                <h3>API Token Management</h3>
+                <div class="token-container">
+                    <code id="api-token-display">Loading token...</code>
+                </div>
+                <p id="remaining-calls">Remaining free calls: Loading...</p>
+                <button class="btn" onclick="generateNewToken()">Generate New Token</button>
+                <p><small>⚠️ Generating a new token will invalidate the existing one</small></p>
+            </div>
+
+            <div class="pricing-cards">
+                <div class="pricing-card">
+                    <h3>Pay as You Go</h3>
+                    <h2>$0.10</h2>
+                    <p>per API call</p>
+                    <ul style="text-align: left;">
+                        <li>No minimum commitment</li>
+                        <li>Flexible usage</li>
+                        <li>Pay only for what you use</li>
+                    </ul>
+                    <button class="btn" onclick="alert('Billing feature coming soon!')">Add Credits</button>
+                </div>
+
+                <div class="pricing-card featured">
+                    <h3>Bundle Package</h3>
+                    <h2>$24</h2>
+                    <p>for 2000 calls</p>
+                    <ul style="text-align: left;">
+                        <li>$0.012 per call (88% savings)</li>
+                        <li>Valid for 12 months</li>
+                        <li>Premium support included</li>
+                    </ul>
+                    <button class="btn" onclick="alert('Billing feature coming soon!')">Purchase Bundle</button>
+                </div>
+            </div>
+
+            <div class="quick-links">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="#" onclick="showPage('dashboard')">View API Usage Statistics</a></li>
+                    <li><a href="#" onclick="alert('Documentation coming soon!')">API Documentation</a></li>
+                    <li><a href="#" onclick="alert('Billing feature coming soon!')">Manage Billing</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Dashboard Page -->
+        <div id="dashboard-page" class="page-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>API Calls Today</h3>
+                    <h2>247</h2>
+                    <p>↑ 12% from yesterday</p>
+                    <small>Monthly quota: 8,423/10,000</small>
+                </div>
+                <div class="stat-card">
+                    <h3>Current Spend</h3>
+                    <h2>$24.70</h2>
+                    <p>This billing cycle</p>
+                    <small>Projected: $32.10</small>
+                </div>
+                <div class="stat-card">
+                    <h3>Performance</h3>
+                    <h2>99.9%</h2>
+                    <p>Uptime this month</p>
+                    <small>Avg response: 142ms</small>
+                </div>
+                <div class="stat-card">
+                    <h3>Active Tokens</h3>
+                    <h2>3</h2>
+                    <p>Last used: 2 mins ago</p>
+                    <small>2 production, 1 test</small>
+                </div>
+            </div>
+            <div class="chart-container">
+                <h3>API Usage Insights</h3>
+                <div style="display: flex; justify-content: space-between; margin: 20px 0; flex-wrap: wrap;">
+                    <div>
+                        <h4>Most Used Endpoints</h4>
+                        <p>/api/v1/analyze: 45%</p>
+                        <p>/api/v1/process: 30%</p>
+                        <p>/api/v1/validate: 25%</p>
+                    </div>
+                    <div>
+                        <h4>Error Rate by Hour</h4>
+                        <p>Peak: 0.2% at 14:00 UTC</p>
+                        <p>Average: 0.1%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Profile Page -->
+        <div id="user-page" class="page-section">
+            <form class="profileform">
+                <table border="0">
+                    <tr><td valign="top">user:</td><td><b id="profile-username">user123</b></td></tr>
+                    <tr><td valign="top">account type:</td><td><b>Free Tier (<span id="profile-remaining-calls">42/50</span> calls remaining)</b></td></tr>
+                    <tr><td valign="top">created:</td><td id="profile-created-date">2025-04-01</td></tr>
+                    <tr><td valign="top">email:</td><td><input type="email" id="profile-email" name="email" value="user@example.com" size="60"></td></tr>
+                    <tr><td valign="top">API calls made:</td><td id="profile-calls-made">8</td></tr>
+                    <tr><td valign="top">active instances:</td><td>1</td></tr>
+                    <tr><td valign="top">rate limit:</td><td>100 calls/minute</td></tr>
+                    <tr><td valign="top">billing cycle:</td><td>Monthly (1st-30th)</td></tr>
+                    <tr><td valign="top">current usage:</td><td>₹64 (8 calls @ ₹8/call)</td></tr>
+
+                    <tr><td></td><td><a href="#" onclick="alert('Change password feature coming soon!')"><u>change password</u></a></td></tr>
+                    <tr><td></td><td><a href="#" onclick="generateNewToken(); showPage('home');"><u>regenerate API token</u></a></td></tr>
+                    <tr><td></td><td><a href="#" onclick="alert('Billing history coming soon!')"><u>billing history</u></a></td></tr>
+                    <tr><td></td><td><a href="#" onclick="showPage('dashboard')"><u>detailed usage stats</u></a></td></tr>
+                </table>
+                <br>
+                <input type="submit" value="update" class="btn">
+            </form>
+        </div>
+
+        <!-- Settings Page -->
+        <div id="settings-page" class="page-section">
+            <div class="settings-section">
+                <h3>API Configuration</h3>
+                <div class="setting-row">
+                    <span>Rate Limiting</span>
+                    <select>
+                        <option>100 calls/minute (Free)</option>
+                        <option>500 calls/minute ($10/mo)</option>
+                        <option>1000 calls/minute ($18/mo)</option>
+                        <option>Custom Limit</option>
+                    </select>
+                </div>
+                <div class="setting-row">
+                    <span>Response Format</span>
+                    <select>
+                        <option>JSON (Default)</option>
+                        <option>XML</option>
+                        <option>CSV (Beta)</option>
+                    </select>
+                </div>
+                <div class="setting-row">
+                    <span>Error Handling</span>
+                    <select>
+                        <option>Detailed (Development)</option>
+                        <option>Basic (Production)</option>
+                        <option>Custom</option>
+                    </select>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3>Security</h3>
+                <div class="setting-row">
+                    <span>IP Whitelist</span>
+                    <input type="text" placeholder="Add IP addresses">
+                </div>
+                <div class="setting-row">
+                    <span>Token Expiry</span>
+                    <select>
+                        <option>Never</option>
+                        <option>30 days</option>
+                        <option>90 days</option>
+                        <option>Custom</option>
+                    </select>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3>Notifications</h3>
+                <div class="setting-row">
+                    <span>Error Alerts</span>
+                    <input type="checkbox" checked>
+                </div>
+                <div class="setting-row">
+                    <span>Usage Threshold Alerts</span>
+                    <input type="checkbox" checked>
+                </div>
+                <div class="setting-row">
+                    <span>Reports Frequency</span>
+                    <select>
+                        <option>Daily</option>
+                        <option>Weekly</option>
+                        <option>Monthly</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn" style="margin-top: 20px;">Save Settings</button>
+        </div>
+
+        <!-- Help Page -->
+        <div id="help-page" class="page-section">
+            <div class="help-section">
+                <h3>Frequently Asked Questions</h3>
+                <div class="faq-item">
+                    <h4>How do I generate a new API token?</h4>
+                    <p>Go to your home page and click the "Generate New Token" button in the API Token Management section.</p>
+                </div>
+                <div class="faq-item">
+                    <h4>What are the rate limits?</h4>
+                    <p>Free tier users get 100 calls/minute. Premium users can configure their rate limits in Settings.</p>
+                </div>
+                <div class="faq-item">
+                    <h4>How do I upgrade my plan?</h4>
+                    <p>Visit the home page and select a pricing plan that suits your needs.</p>
+                </div>
+            </div>
+            <div class="help-section">
+                <h3>Contact Support</h3>
+                <p>Email: support@napier.com</p>
+                <p>Response time: Within 24 hours</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Supabase client
+        const supabaseUrl = 'https://himpnuensycxlzhmfqgn.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpbXBudWVuc3ljeGx6aG1mcWduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU4NTAyNTYsImV4cCI6MjA2MTQyNjI1Nn0.-1awQ-mn2Nyl8MC2yFwPW7V83z82vkEciw3igRQFZbM';
+        const supabase = supabaseClient.createClient(supabaseUrl, supabaseKey);
+
+        // Function to show a specific page
+        function showPage(pageName) {
+            // First check if user is logged in for protected pages
+            const isLoggedIn = checkAuth();
+            const protectedPages = ['home', 'dashboard', 'settings', 'user', 'help'];
+            
+            if (protectedPages.includes(pageName) && !isLoggedIn) {
+                showLoginForm();
+                return;
+            }
+
+            // Hide all pages
+            document.querySelectorAll('.page-section').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Show the requested page
+            document.getElementById(pageName + '-page').classList.add('active');
+            
+            // Update navigation UI
+            updateNavigation();
+            
+            // Load page-specific data
+            if (pageName === 'home') {
+                loadUserToken();
+            } else if (pageName === 'user') {
+                loadUserProfile();
+            }
+        }
+
+        // Function to show login form
+        function showLoginForm() {
+            document.querySelectorAll('.page-section').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById('auth-page').classList.add('active');
+        }
+
+        // Login form handler
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+                
+                if (error) throw error;
+                
+                // Store auth data in localStorage
+                localStorage.setItem('user', JSON.stringify(data.user));
+                localStorage.setItem('session', JSON.stringify(data.session));
+                
+                // Show home page
+                showPage('home');
+            } catch (error) {
+                const loginError = document.getElementById('login-error');
+                loginError.textContent = 'Login failed: ' + error.message;
+                loginError.style.display = 'block';
+            }
+        });
+
+        // Signup form handler
+        document.getElementById('signup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const username = document.getElementById('signup-username').value;
+
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            username: username
+                        }
+                    }
+                });
+
+                if (error) throw error;
+                
+                // Create user credits entry
+                if (data.user) {
+                    const { error: creditsError } = await supabase
+                        .from('user_credits')
+                        .insert([{ 
+                            user_id: data.user.id,
+                            free_calls_remaining: 50
+                        }]);
+                        
+                    if (creditsError) console.error('Error creating credits:', creditsError);
+                }
+                
+                alert('Registration successful! Please check your email for verification.');
+                // Show login form
+                document.getElementById('signup-section').style.display = 'none';
+                document.getElementById('login-section').style.display = 'block';
+            } catch (error) {
+                const signupError = document.getElementById('signup-error');
+                signupError.textContent = 'Signup failed: ' + error.message;
+                signupError.style.display = 'block';
+            }
+        });
+
+        // Check if user is authenticated
+        function checkAuth() {
+            const session = JSON.parse(localStorage.getItem('session'));
+            if (!session || new Date(session.expires_at) < new Date()) {
+                return false;
+            }
+            return true;
+        }
+
+        // Update navigation UI based on auth state
+        function updateNavigation() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (user) {
+                document.getElementById('user-display').innerHTML = 
+                    `<a href="#" onclick="showPage('user')">${user.user_metadata?.username || user.email}</a> | 
+                    <a href="#" onclick="logout()">logout</a>`;
+            } else {
+                document.getElementById('user-display').innerHTML = 
+                    `<a href="#" onclick="showPage('user')">guest</a> | 
+                    <a href="#" onclick="showLoginForm()">login</a>`;
+            }
+        }
+
+        // Logout function
+        async function logout() {
+            await supabase.auth.signOut();
+            localStorage.removeItem('user');
+            localStorage.removeItem('session');
+            showLoginForm();
+        }
+
+        // Function to generate a new API token
+        async function generateNewToken() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) {
+                alert('You must be logged in to generate a token');
+                return;
+            }
+            
+            try {
+                // First, deactivate any existing tokens
+                const { error: updateError } = await supabase
+                    .from('api_tokens')
+                    .update({ is_active: false })
+                    .eq('user_id', user.id)
+                    .eq('is_active', true);
+                
+                if (updateError) throw updateError;
+                
+                // Generate a new token
+                const tokenPrefix = 'napier_tk_';
+                const randomPart = Array(24)
+                    .fill(0)
+                    .map(() => Math.random().toString(36).charAt(2))
+                    .join('');
+                const newToken = tokenPrefix + randomPart;
+                
+                // Save the new token
+                const { error } = await supabase
+                    .from('api_tokens')
+                    .insert([{ 
+                        user_id: user.id,
+                        token: newToken
+                    }]);
+                
+                if (error) throw error;
+                
+                // Update UI
+                document.getElementById('api-token-display').textContent = newToken;
+                
+                alert('New token generated successfully!');
+            } catch (error) {
+                alert('Error generating token: ' + error.message);
+            }
+        }
+
+        // Function to load user token
+        async function loadUserToken() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) return;
+            
+            try {
+                // Get active token
+                const { data: tokens, error } = await supabase
+                    .from('api_tokens')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .eq('is_active', true)
+                    .limit(1);
+                
+                if (error) throw error;
+                
+                const tokenDisplay = document.getElementById('api-token-display');
+                if (tokens && tokens.length > 0) {
+                    tokenDisplay.textContent = tokens[0].token;
+                } else {
+                    tokenDisplay.textContent = 'No active token. Generate one below.';
+                }
+                
+                // Get remaining free calls
+                const { data: credits, error: creditsError } = await supabase
+                    .from('user_credits')
+                    .select('free_calls_remaining')
+                    .eq('user_id', user.id)
+                    .single();
+                
+                if (creditsError) throw creditsError;
+                
+                const remainingCalls = document.getElementById('remaining-calls');
+                if (credits) {
+                    remainingCalls.textContent = `Remaining free calls: ${credits.free_calls_remaining}/50`;
+                }
+            } catch (error) {
+                console.error('Error loading token data:', error);
+            }
+        }
+
+        // Function to load user profile
+        async function loadUserProfile() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) return;
+            
+            try {
+                // Update profile UI
+                document.getElementById('profile-username').textContent = user.user_metadata?.username || user.email;
+                document.getElementById('profile-email').value = user.email;
+                document.getElementById('profile-created-date').textContent = new Date(user.created_at).toISOString().split('T')[0];
+                
+                // Get user credits
+                const { data: credits, error: creditsError } = await supabase
+                    .from('user_credits')
+                    .select('free_calls_remaining')
+                    .eq('user_id', user.id)
+                    .single();
+                
+                if (creditsError) throw creditsError;
+                
+                if (credits) {
+                    document.getElementById('profile-remaining-calls').textContent = `${credits.free_calls_remaining}/50`;
+                }
+                
+                // Get API calls made
+                const { data: usage, error: usageError } = await supabase
+                    .from('api_usage')
+                    .select('count')
+                    .eq('user_id', user.id)
+                    .single();
+                
+                if (usageError && usageError.code !== 'PGRST116') {
+                    throw usageError;
+                }
+                
+                if (usage) {
+                    document.getElementById('profile-calls-made').textContent = usage.count;
+                }
+            } catch (error) {
+                console.error('Error loading profile data:', error);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if user is logged in
+            if (checkAuth()) {
+                showPage('home');
+            } else {
+                showLoginForm();
+            }
+            
+            // Update navigation
+            updateNavigation();
+        });
+    </script>
+</body>
+</html>
