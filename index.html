@@ -484,10 +484,10 @@
 
     <script>
 
-        // Initialize Supabase client
+       // Initialize Supabase client
 const supabaseUrl = 'https://himpnuensycxlzhmfqgn.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpbXBudWVuc3ljeGx6aG1mcWduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU4NTAyNTYsImV4cCI6MjA2MTQyNjI1Nn0.-1awQ-mn2Nyl8MC2yFwPW7V83z82vkEciw3igRQFZbM';
-const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+const supabase = supabaseClient.createClient(supabaseUrl, supabaseKey);
 
 // Function to show a specific page
 function showPage(pageName) {
@@ -525,10 +525,6 @@ function showLoginForm() {
         page.classList.remove('active');
     });
     document.getElementById('auth-page').classList.add('active');
-    
-    // Make sure both sections are visible
-    document.getElementById('login-section').style.display = 'block';
-    document.getElementById('signup-section').style.display = 'block';
 }
 
 // Login form handler
@@ -561,11 +557,20 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 // Signup form handler
 document.getElementById('signup-form').addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    // Show a loading indicator or disable the button
+    const submitButton = e.target.querySelector('button[type="submit"]');
+    const originalButtonText = submitButton.textContent;
+    submitButton.textContent = 'Processing...';
+    submitButton.disabled = true;
+    
     const email = document.getElementById('signup-email').value;
     const password = document.getElementById('signup-password').value;
     const username = document.getElementById('signup-username').value;
-
+    
     try {
+        console.log('Attempting signup with:', { email, username });
+        
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
@@ -576,10 +581,17 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
             }
         });
 
-        if (error) throw error;
+        if (error) {
+            console.error('Signup error:', error);
+            throw error;
+        }
+        
+        console.log('Signup successful:', data);
         
         // Create user credits entry
         if (data.user) {
+            console.log('Creating user credits for:', data.user.id);
+            
             const { error: creditsError } = await supabase
                 .from('user_credits')
                 .insert([{ 
@@ -587,45 +599,60 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
                     free_calls_remaining: 50
                 }]);
                 
-            if (creditsError) console.error('Error creating credits:', creditsError);
+            if (creditsError) {
+                console.error('Error creating credits:', creditsError);
+            } else {
+                console.log('Credits created successfully');
+            }
             
-            // Store auth data in localStorage if email verification is not required
-            // Most Supabase projects require email verification, but we'll save the data anyway
+            // Store user data
             localStorage.setItem('user', JSON.stringify(data.user));
+            
+            // If session is available, store it and navigate to home
             if (data.session) {
                 localStorage.setItem('session', JSON.stringify(data.session));
-                // If we have a session, user can be logged in directly
+                alert('Registration successful! Redirecting to home page.');
                 showPage('home');
-                return;
+            } else {
+                // If no session (email confirmation required)
+                alert('Registration successful! Please check your email for verification.');
             }
         }
-        
-        alert('Registration successful! Please check your email for verification.');
-        // We don't hide sections anymore - just keep the UI as is
     } catch (error) {
+        console.error('Signup process failed:', error);
         const signupError = document.getElementById('signup-error');
         signupError.textContent = 'Signup failed: ' + error.message;
         signupError.style.display = 'block';
+    } finally {
+        // Reset the button state
+        submitButton.textContent = originalButtonText;
+        submitButton.disabled = false;
     }
 });
 
 // Check if user is authenticated
 function checkAuth() {
-    const session = JSON.parse(localStorage.getItem('session'));
-    const user = JSON.parse(localStorage.getItem('user'));
-    
-    if (!session || !user) {
+    try {
+        const session = JSON.parse(localStorage.getItem('session'));
+        const user = JSON.parse(localStorage.getItem('user'));
+        
+        if (!session || !user) {
+            return false;
+        }
+        
+        // Check if session is expired
+        const expiresAt = session.expires_at || session.expiresAt;
+        if (expiresAt && new Date(expiresAt * 1000) < new Date()) {
+            // Session expired
+            logout();
+            return false;
+        }
+        
+        return true;
+    } catch (e) {
+        console.error('Auth check error:', e);
         return false;
     }
-    
-    // Check if session is expired
-    if (session.expires_at && new Date(session.expires_at * 1000) < new Date()) {
-        // Session expired
-        logout();
-        return false;
-    }
-    
-    return true;
 }
 
 // Update navigation UI based on auth state
@@ -791,7 +818,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update navigation
     updateNavigation();
 });
-        
+   
       </script>
 </body>
 </html>
