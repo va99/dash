@@ -483,291 +483,315 @@
     </div>
 
     <script>
+
         // Initialize Supabase client
-        const supabaseUrl = 'https://himpnuensycxlzhmfqgn.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpbXBudWVuc3ljeGx6aG1mcWduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU4NTAyNTYsImV4cCI6MjA2MTQyNjI1Nn0.-1awQ-mn2Nyl8MC2yFwPW7V83z82vkEciw3igRQFZbM';
-        const supabase = supabaseClient.createClient(supabaseUrl, supabaseKey);
+const supabaseUrl = 'https://himpnuensycxlzhmfqgn.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpbXBudWVuc3ljeGx6aG1mcWduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU4NTAyNTYsImV4cCI6MjA2MTQyNjI1Nn0.-1awQ-mn2Nyl8MC2yFwPW7V83z82vkEciw3igRQFZbM';
+const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-        // Function to show a specific page
-        function showPage(pageName) {
-            // First check if user is logged in for protected pages
-            const isLoggedIn = checkAuth();
-            const protectedPages = ['home', 'dashboard', 'settings', 'user', 'help'];
-            
-            if (protectedPages.includes(pageName) && !isLoggedIn) {
-                showLoginForm();
-                return;
+// Function to show a specific page
+function showPage(pageName) {
+    // First check if user is logged in for protected pages
+    const isLoggedIn = checkAuth();
+    const protectedPages = ['home', 'dashboard', 'settings', 'user', 'help'];
+    
+    if (protectedPages.includes(pageName) && !isLoggedIn) {
+        showLoginForm();
+        return;
+    }
+
+    // Hide all pages
+    document.querySelectorAll('.page-section').forEach(page => {
+        page.classList.remove('active');
+    });
+    
+    // Show the requested page
+    document.getElementById(pageName + '-page').classList.add('active');
+    
+    // Update navigation UI
+    updateNavigation();
+    
+    // Load page-specific data
+    if (pageName === 'home') {
+        loadUserToken();
+    } else if (pageName === 'user') {
+        loadUserProfile();
+    }
+}
+
+// Function to show login form
+function showLoginForm() {
+    document.querySelectorAll('.page-section').forEach(page => {
+        page.classList.remove('active');
+    });
+    document.getElementById('auth-page').classList.add('active');
+    
+    // Make sure both sections are visible
+    document.getElementById('login-section').style.display = 'block';
+    document.getElementById('signup-section').style.display = 'block';
+}
+
+// Login form handler
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-username').value;
+    const password = document.getElementById('login-password').value;
+    
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password
+        });
+        
+        if (error) throw error;
+        
+        // Store auth data in localStorage
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('session', JSON.stringify(data.session));
+        
+        // Show home page
+        showPage('home');
+    } catch (error) {
+        const loginError = document.getElementById('login-error');
+        loginError.textContent = 'Login failed: ' + error.message;
+        loginError.style.display = 'block';
+    }
+});
+
+// Signup form handler
+document.getElementById('signup-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('signup-email').value;
+    const password = document.getElementById('signup-password').value;
+    const username = document.getElementById('signup-username').value;
+
+    try {
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    username: username
+                }
             }
+        });
 
-            // Hide all pages
-            document.querySelectorAll('.page-section').forEach(page => {
-                page.classList.remove('active');
-            });
-            
-            // Show the requested page
-            document.getElementById(pageName + '-page').classList.add('active');
-            
-            // Update navigation UI
-            updateNavigation();
-            
-            // Load page-specific data
-            if (pageName === 'home') {
-                loadUserToken();
-            } else if (pageName === 'user') {
-                loadUserProfile();
-            }
-        }
-
-        // Function to show login form
-        function showLoginForm() {
-            document.querySelectorAll('.page-section').forEach(page => {
-                page.classList.remove('active');
-            });
-            document.getElementById('auth-page').classList.add('active');
-        }
-
-        // Login form handler
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('login-username').value;
-            const password = document.getElementById('login-password').value;
-            
-            try {
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password
-                });
+        if (error) throw error;
+        
+        // Create user credits entry
+        if (data.user) {
+            const { error: creditsError } = await supabase
+                .from('user_credits')
+                .insert([{ 
+                    user_id: data.user.id,
+                    free_calls_remaining: 50
+                }]);
                 
-                if (error) throw error;
-                
-                // Store auth data in localStorage
-                localStorage.setItem('user', JSON.stringify(data.user));
+            if (creditsError) console.error('Error creating credits:', creditsError);
+            
+            // Store auth data in localStorage if email verification is not required
+            // Most Supabase projects require email verification, but we'll save the data anyway
+            localStorage.setItem('user', JSON.stringify(data.user));
+            if (data.session) {
                 localStorage.setItem('session', JSON.stringify(data.session));
-                
-                // Show home page
+                // If we have a session, user can be logged in directly
                 showPage('home');
-            } catch (error) {
-                const loginError = document.getElementById('login-error');
-                loginError.textContent = 'Login failed: ' + error.message;
-                loginError.style.display = 'block';
-            }
-        });
-
-        // Signup form handler
-        document.getElementById('signup-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
-            const username = document.getElementById('signup-username').value;
-
-            try {
-                const { data, error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        data: {
-                            username: username
-                        }
-                    }
-                });
-
-                if (error) throw error;
-                
-                // Create user credits entry
-                if (data.user) {
-                    const { error: creditsError } = await supabase
-                        .from('user_credits')
-                        .insert([{ 
-                            user_id: data.user.id,
-                            free_calls_remaining: 50
-                        }]);
-                        
-                    if (creditsError) console.error('Error creating credits:', creditsError);
-                }
-                
-                alert('Registration successful! Please check your email for verification.');
-                // Show login form
-                document.getElementById('signup-section').style.display = 'none';
-                document.getElementById('login-section').style.display = 'block';
-            } catch (error) {
-                const signupError = document.getElementById('signup-error');
-                signupError.textContent = 'Signup failed: ' + error.message;
-                signupError.style.display = 'block';
-            }
-        });
-
-        // Check if user is authenticated
-        function checkAuth() {
-            const session = JSON.parse(localStorage.getItem('session'));
-            if (!session || new Date(session.expires_at) < new Date()) {
-                return false;
-            }
-            return true;
-        }
-
-        // Update navigation UI based on auth state
-        function updateNavigation() {
-            const user = JSON.parse(localStorage.getItem('user'));
-            if (user) {
-                document.getElementById('user-display').innerHTML = 
-                    `<a href="#" onclick="showPage('user')">${user.user_metadata?.username || user.email}</a> | 
-                    <a href="#" onclick="logout()">logout</a>`;
-            } else {
-                document.getElementById('user-display').innerHTML = 
-                    `<a href="#" onclick="showPage('user')">guest</a> | 
-                    <a href="#" onclick="showLoginForm()">login</a>`;
-            }
-        }
-
-        // Logout function
-        async function logout() {
-            await supabase.auth.signOut();
-            localStorage.removeItem('user');
-            localStorage.removeItem('session');
-            showLoginForm();
-        }
-
-        // Function to generate a new API token
-        async function generateNewToken() {
-            const user = JSON.parse(localStorage.getItem('user'));
-            if (!user) {
-                alert('You must be logged in to generate a token');
                 return;
             }
-            
-            try {
-                // First, deactivate any existing tokens
-                const { error: updateError } = await supabase
-                    .from('api_tokens')
-                    .update({ is_active: false })
-                    .eq('user_id', user.id)
-                    .eq('is_active', true);
-                
-                if (updateError) throw updateError;
-                
-                // Generate a new token
-                const tokenPrefix = 'napier_tk_';
-                const randomPart = Array(24)
-                    .fill(0)
-                    .map(() => Math.random().toString(36).charAt(2))
-                    .join('');
-                const newToken = tokenPrefix + randomPart;
-                
-                // Save the new token
-                const { error } = await supabase
-                    .from('api_tokens')
-                    .insert([{ 
-                        user_id: user.id,
-                        token: newToken
-                    }]);
-                
-                if (error) throw error;
-                
-                // Update UI
-                document.getElementById('api-token-display').textContent = newToken;
-                
-                alert('New token generated successfully!');
-            } catch (error) {
-                alert('Error generating token: ' + error.message);
-            }
         }
+        
+        alert('Registration successful! Please check your email for verification.');
+        // We don't hide sections anymore - just keep the UI as is
+    } catch (error) {
+        const signupError = document.getElementById('signup-error');
+        signupError.textContent = 'Signup failed: ' + error.message;
+        signupError.style.display = 'block';
+    }
+});
 
-        // Function to load user token
-        async function loadUserToken() {
-            const user = JSON.parse(localStorage.getItem('user'));
-            if (!user) return;
-            
-            try {
-                // Get active token
-                const { data: tokens, error } = await supabase
-                    .from('api_tokens')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .eq('is_active', true)
-                    .limit(1);
-                
-                if (error) throw error;
-                
-                const tokenDisplay = document.getElementById('api-token-display');
-                if (tokens && tokens.length > 0) {
-                    tokenDisplay.textContent = tokens[0].token;
-                } else {
-                    tokenDisplay.textContent = 'No active token. Generate one below.';
-                }
-                
-                // Get remaining free calls
-                const { data: credits, error: creditsError } = await supabase
-                    .from('user_credits')
-                    .select('free_calls_remaining')
-                    .eq('user_id', user.id)
-                    .single();
-                
-                if (creditsError) throw creditsError;
-                
-                const remainingCalls = document.getElementById('remaining-calls');
-                if (credits) {
-                    remainingCalls.textContent = `Remaining free calls: ${credits.free_calls_remaining}/50`;
-                }
-            } catch (error) {
-                console.error('Error loading token data:', error);
-            }
+// Check if user is authenticated
+function checkAuth() {
+    const session = JSON.parse(localStorage.getItem('session'));
+    const user = JSON.parse(localStorage.getItem('user'));
+    
+    if (!session || !user) {
+        return false;
+    }
+    
+    // Check if session is expired
+    if (session.expires_at && new Date(session.expires_at * 1000) < new Date()) {
+        // Session expired
+        logout();
+        return false;
+    }
+    
+    return true;
+}
+
+// Update navigation UI based on auth state
+function updateNavigation() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user) {
+        document.getElementById('user-display').innerHTML = 
+            `<a href="#" onclick="showPage('user')">${user.user_metadata?.username || user.email}</a> | 
+            <a href="#" onclick="logout()">logout</a>`;
+    } else {
+        document.getElementById('user-display').innerHTML = 
+            `<a href="#" onclick="showPage('user')">guest</a> | 
+            <a href="#" onclick="showLoginForm()">login</a>`;
+    }
+}
+
+// Logout function
+async function logout() {
+    await supabase.auth.signOut();
+    localStorage.removeItem('user');
+    localStorage.removeItem('session');
+    showLoginForm();
+}
+
+// Function to generate a new API token
+async function generateNewToken() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) {
+        alert('You must be logged in to generate a token');
+        return;
+    }
+    
+    try {
+        // First, deactivate any existing tokens
+        const { error: updateError } = await supabase
+            .from('api_tokens')
+            .update({ is_active: false })
+            .eq('user_id', user.id)
+            .eq('is_active', true);
+        
+        if (updateError) throw updateError;
+        
+        // Generate a new token
+        const tokenPrefix = 'napier_tk_';
+        const randomPart = Array(24)
+            .fill(0)
+            .map(() => Math.random().toString(36).charAt(2))
+            .join('');
+        const newToken = tokenPrefix + randomPart;
+        
+        // Save the new token
+        const { error } = await supabase
+            .from('api_tokens')
+            .insert([{ 
+                user_id: user.id,
+                token: newToken
+            }]);
+        
+        if (error) throw error;
+        
+        // Update UI
+        document.getElementById('api-token-display').textContent = newToken;
+        
+        alert('New token generated successfully!');
+    } catch (error) {
+        alert('Error generating token: ' + error.message);
+    }
+}
+
+// Function to load user token
+async function loadUserToken() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) return;
+    
+    try {
+        // Get active token
+        const { data: tokens, error } = await supabase
+            .from('api_tokens')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('is_active', true)
+            .limit(1);
+        
+        if (error) throw error;
+        
+        const tokenDisplay = document.getElementById('api-token-display');
+        if (tokens && tokens.length > 0) {
+            tokenDisplay.textContent = tokens[0].token;
+        } else {
+            tokenDisplay.textContent = 'No active token. Generate one below.';
         }
-
-        // Function to load user profile
-        async function loadUserProfile() {
-            const user = JSON.parse(localStorage.getItem('user'));
-            if (!user) return;
-            
-            try {
-                // Update profile UI
-                document.getElementById('profile-username').textContent = user.user_metadata?.username || user.email;
-                document.getElementById('profile-email').value = user.email;
-                document.getElementById('profile-created-date').textContent = new Date(user.created_at).toISOString().split('T')[0];
-                
-                // Get user credits
-                const { data: credits, error: creditsError } = await supabase
-                    .from('user_credits')
-                    .select('free_calls_remaining')
-                    .eq('user_id', user.id)
-                    .single();
-                
-                if (creditsError) throw creditsError;
-                
-                if (credits) {
-                    document.getElementById('profile-remaining-calls').textContent = `${credits.free_calls_remaining}/50`;
-                }
-                
-                // Get API calls made
-                const { data: usage, error: usageError } = await supabase
-                    .from('api_usage')
-                    .select('count')
-                    .eq('user_id', user.id)
-                    .single();
-                
-                if (usageError && usageError.code !== 'PGRST116') {
-                    throw usageError;
-                }
-                
-                if (usage) {
-                    document.getElementById('profile-calls-made').textContent = usage.count;
-                }
-            } catch (error) {
-                console.error('Error loading profile data:', error);
-            }
+        
+        // Get remaining free calls
+        const { data: credits, error: creditsError } = await supabase
+            .from('user_credits')
+            .select('free_calls_remaining')
+            .eq('user_id', user.id)
+            .single();
+        
+        if (creditsError) throw creditsError;
+        
+        const remainingCalls = document.getElementById('remaining-calls');
+        if (credits) {
+            remainingCalls.textContent = `Remaining free calls: ${credits.free_calls_remaining}/50`;
         }
+    } catch (error) {
+        console.error('Error loading token data:', error);
+    }
+}
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            // Check if user is logged in
-            if (checkAuth()) {
-                showPage('home');
-            } else {
-                showLoginForm();
-            }
-            
-            // Update navigation
-            updateNavigation();
-        });
-    </script>
+// Function to load user profile
+async function loadUserProfile() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) return;
+    
+    try {
+        // Update profile UI
+        document.getElementById('profile-username').textContent = user.user_metadata?.username || user.email;
+        document.getElementById('profile-email').value = user.email;
+        document.getElementById('profile-created-date').textContent = new Date(user.created_at).toISOString().split('T')[0];
+        
+        // Get user credits
+        const { data: credits, error: creditsError } = await supabase
+            .from('user_credits')
+            .select('free_calls_remaining')
+            .eq('user_id', user.id)
+            .single();
+        
+        if (creditsError) throw creditsError;
+        
+        if (credits) {
+            document.getElementById('profile-remaining-calls').textContent = `${credits.free_calls_remaining}/50`;
+        }
+        
+        // Get API calls made
+        const { data: usage, error: usageError } = await supabase
+            .from('api_usage')
+            .select('count')
+            .eq('user_id', user.id)
+            .single();
+        
+        if (usageError && usageError.code !== 'PGRST116') {
+            throw usageError;
+        }
+        
+        if (usage) {
+            document.getElementById('profile-calls-made').textContent = usage.count;
+        }
+    } catch (error) {
+        console.error('Error loading profile data:', error);
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    // Check if user is logged in
+    if (checkAuth()) {
+        showPage('home');
+    } else {
+        showLoginForm();
+    }
+    
+    // Update navigation
+    updateNavigation();
+});
+        
+      </script>
 </body>
 </html>
